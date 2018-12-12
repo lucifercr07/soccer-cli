@@ -5,7 +5,7 @@ from soccer.exceptions import APIErrorException
 
 class RequestHandler(object):
 
-    BASE_URL = 'http://api.football-data.org/v1/'
+    BASE_URL = 'http://api.football-data.org/v2/'
     LIVE_URL = 'http://soccer-cli.appspot.com/'
 
     def __init__(self, headers, league_ids, team_names, writer):
@@ -17,7 +17,6 @@ class RequestHandler(object):
     def _get(self, url):
         """Handles api.football-data.org requests"""
         req = requests.get(RequestHandler.BASE_URL+url, headers=self.headers)
-
         if req.status_code == requests.codes.ok:
             return req
 
@@ -66,17 +65,17 @@ class RequestHandler(object):
             click.secho("Team code is not correct.",
                         fg="red", bold=True)
 
-    def get_standings(self, league):
+    def get_standings(self, league, table_type):
         """Queries the API and gets the standings for a particular league"""
         league_id = self.league_ids[league]
         try:
-            req = self._get('soccerseasons/{id}/leagueTable'.format(
+            req = self._get('competitions/{id}/standings'.format(
                         id=league_id))
-            self.writer.standings(req.json(), league)
+            self.writer.standings(req.json(), league, table_type)
         except APIErrorException:
             # Click handles incorrect League codes so this will only come up
             # if that league does not have standings available. ie. Champions League
-            click.secho("No standings availble for {league}.".format(league=league),
+            click.secho("No standings available for {league}.".format(league=league),
                         fg="red", bold=True)
 
     def get_league_scores(self, league, time, show_upcoming, use_12_hour_format):

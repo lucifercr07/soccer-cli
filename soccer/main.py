@@ -20,7 +20,7 @@ def load_json(file):
 
 LEAGUE_IDS = leagueids.LEAGUE_IDS
 TEAM_DATA = load_json("teams.json")["teams"]
-TEAM_NAMES = {team["code"]: team["id"] for team in TEAM_DATA}
+TEAM_NAMES = {team["shortName"]: team["id"] for team in TEAM_DATA}
 
 
 def get_input_key():
@@ -74,7 +74,7 @@ def load_config_key():
 def map_team_id(code):
     """Take in team ID, read JSON file to map ID to name"""
     for team in TEAM_DATA:
-        if team["code"] == code:
+        if team["shortName"] == code:
             click.secho(team["name"], fg="green")
             break
     else:
@@ -84,15 +84,15 @@ def map_team_id(code):
 def list_team_codes():
     """List team names in alphabetical order of team ID, per league."""
     # Sort teams by league, then alphabetical by code
-    cleanlist = sorted(TEAM_DATA, key=lambda k: (k["league"]["name"], k["code"]))
+    cleanlist = sorted(TEAM_DATA, key=lambda k: (k["league"]["name"], k["shortName"]))
     # Get league names
     leaguenames = sorted(list(set([team["league"]["name"] for team in cleanlist])))
     for league in leaguenames:
         teams = [team for team in cleanlist if team["league"]["name"] == league]
         click.secho(league, fg="green", bold=True)
         for team in teams:
-            if team["code"] != "null":
-                click.secho(u"{0}: {1}".format(team["code"], team["name"]), fg="yellow")
+            if team["shortName"] != "null":
+                click.secho(u"{0}: {1}".format(team["shortName"], team["name"]), fg="yellow")
         click.secho("")
 
 
@@ -109,6 +109,8 @@ def list_team_codes():
               help="Standings for a particular league.")
 @click.option('--league', '-league', type=click.Choice(LEAGUE_IDS.keys()),
               help=("Select fixtures from a particular league."))
+@click.option('--table_type', '-table_type', default="TOTAL", type=click.STRING,
+              help=("Select table_type as Home, Away, Total"))
 @click.option('--players', is_flag=True,
               help="Shows players for a particular team.")
 @click.option('--team', type=click.Choice(TEAM_NAMES.keys()),
@@ -129,7 +131,7 @@ def list_team_codes():
               help='Output in JSON format.')
 @click.option('-o', '--output-file', default=None,
               help="Save output to a file (only if csv or json option is provided).")
-def main(league, time, standings, team, live, use12hour, players,
+def main(league, time, standings, table_type, team, live, use12hour, players,
          output_format, output_file, upcoming, lookup, listcodes, apikey):
     """
     A CLI for live and past football scores from various football leagues.
@@ -171,11 +173,11 @@ def main(league, time, standings, team, live, use12hour, players,
         if standings:
             if not league:
                 raise IncorrectParametersException('Please specify a league. '
-                                                   'Example --standings --league=EPL')
+                                                   'Example --standings --league=PL --table_type=Home/Away')
             if league == 'CL':
                 raise IncorrectParametersException('Standings for CL - '
                                                    'Champions League not supported')
-            rh.get_standings(league)
+            rh.get_standings(league, table_type)
             return
 
         if team:
